@@ -1,43 +1,63 @@
 # gestorIA
 
-REST API that lets small businesses manage their product catalog: create, read,
-update, and soft-delete products, each scoped to its seller (`ownerId`).
-Phase 1 of a three-phase project; see [docs/design.md](docs/design.md) for the
+Product catalog management for small businesses: a REST API to create, read,
+update, and soft-delete products, each scoped to its seller (`ownerId`), with a
+React seller dashboard planned. See [docs/design.md](docs/design.md) for the
 full design and roadmap.
-
-## Prerequisites
-
-- Node.js 22 or later (npm included)
-- Docker with Docker Compose
 
 ## Quick start
 
 ```bash
-cp .env.example .env      # then set a real POSTGRES_PASSWORD
-docker compose up -d      # starts PostgreSQL (pgvector image)
-npm install
-npm run dev               # API on http://localhost:3000
+cp .env.example .env                    # Docker Compose infra; set a real POSTGRES_PASSWORD
+cp apps/api/.env.example apps/api/.env  # API settings; keep DATABASE_URL in sync
+docker compose up -d                    # starts PostgreSQL (pgvector image)
+npm install                             # installs and links all workspaces
+npm run dev:api                         # API on http://localhost:3000
 ```
 
 Check the database is ready with `docker compose ps` (status `healthy`).
 
-## Scripts
+Prerequisites: Node.js 22 or later (npm included), Docker with Docker Compose.
+
+## Workspaces
+
+npm workspaces monorepo. Apps may depend on packages; packages never depend on
+apps, and apps never import each other.
+
+| Path | Package | Purpose |
+|------|---------|---------|
+| `apps/api` | `@gestoria/api` | Express REST API (backend) |
+| `packages/contracts` | `@gestoria/contracts` | Shared HTTP request/response DTO types |
+
+`apps/web` (`@gestoria/web`, React + Vite) is added when frontend work starts.
+
+## Root scripts
+
+Root scripts orchestrate; each workspace owns its own scripts.
 
 | Script | Purpose |
 |--------|---------|
-| `npm run dev` | Run the API with reload on change (tsx) |
-| `npm run build` | Compile TypeScript to `dist/` (tests excluded) |
-| `npm start` | Run the compiled API |
-| `npm test` | Run the test suite once (Vitest) |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run typecheck` | Type-check all sources, tests included |
+| `npm run dev:api` | Run the API with reload on change |
+| `npm test` | Run tests in every workspace |
+| `npm run typecheck` | Type-check every workspace |
+| `npm run build` | Build every workspace that has a build step |
 
-## Project layout
+Target one workspace with `-w`, for example `npm run test:watch -w @gestoria/api`.
+
+## Configuration
+
+| File | Used by | Contents |
+|------|---------|----------|
+| `.env` | Docker Compose | `POSTGRES_*` infra variables |
+| `apps/api/.env` | API | `PORT`, `DATABASE_URL` |
+| `tsconfig.base.json` | All workspaces | Shared strict compiler options |
+
+## API layout (`apps/api`)
 
 Feature-first hexagonal architecture: each feature owns its layers.
 
 ```
-src/
+apps/api/src/
   products/
     domain/          Product entity and business rules
     application/     Use cases
