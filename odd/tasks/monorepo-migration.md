@@ -59,3 +59,14 @@ Strategy: `ask-on-risk`. Forecast: ~200 authored lines (excl. lockfile).
 ## Next step
 
 Return to `feat/phase1-scaffold` work: GREEN for `Product.create` inside `apps/api`.
+
+## Delivery evidence
+
+- Commits: `8660d09` (design), `b432f10` (migration).
+- Native review (RDD): high risk (auth DTOs), consent granted, 4 lenses (risk, resilience, readability, reliability), approved and acknowledged (lineage `review-4be03d2f87d21137`).
+- Non-blocking follow-ups:
+  - R3-env-file-not-loaded (WARNING) — `apps/api` scripts never load `apps/api/.env`; add `--env-file` (Node) or equivalent.
+  - R2-price-unit-unspecified — document price unit/currency in contracts.
+  - R2-update-dto-put-semantics — clarify PUT vs PATCH semantics for `UpdateProductRequest`.
+  - R2-design-tree-lists-unbuilt-web — mark `apps/web` as planned in the design tree.
+  - R3/R4 contracts-runtime-ts-export — contracts export TS source; safe while types-only, needs a build step if runtime values are added.
