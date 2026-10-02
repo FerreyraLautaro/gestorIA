@@ -106,6 +106,39 @@ Self-managed email + password with JWT:
 
 ## 7. Architecture
 
+### Repository structure (monorepo)
+
+One repository managed with **npm workspaces** (no extra monorepo tooling until
+build times justify it).
+
+```
+gestoria/
+  apps/
+    api/              @gestoria/api — Express REST API (backend)
+    web/              @gestoria/web — React + Vite SPA (seller dashboard)
+  packages/
+    contracts/        @gestoria/contracts — shared HTTP contract (request/response DTOs)
+  docs/               Design and project documentation
+  odd/                Task tracking
+  docker-compose.yml  Local infrastructure (PostgreSQL)
+  tsconfig.base.json  Shared compiler options
+  package.json        Workspace root: orchestration scripts only, no runtime code
+```
+
+Rules:
+
+- **Dependency direction:** `apps/*` may depend on `packages/*`; `packages/*` never
+  depend on `apps/*`; `api` and `web` never import each other.
+- **Contracts, not domain:** `packages/contracts` holds only the HTTP shapes the
+  API exposes (DTOs). Domain entities and business rules stay inside `apps/api`.
+- **Each workspace is self-contained:** its own `package.json`, `tsconfig.json`
+  (extending `tsconfig.base.json`), test config, and `.env.example`.
+- **Root scripts orchestrate:** `npm run test|typecheck|build` run across all
+  workspaces; `npm run dev -w @gestoria/api` targets one.
+- **Infrastructure is shared:** `docker-compose.yml` stays at the root.
+
+### Backend layout (`apps/api`)
+
 Hexagonal (ports and adapters), so later phases plug in without rewriting the core.
 Code is organized feature-first: each feature owns its hexagonal layers.
 
@@ -130,6 +163,8 @@ src/
 | Language | TypeScript (strict mode) |
 | HTTP framework | Express |
 | Database | PostgreSQL (pgvector-enabled image), run locally via Docker Compose |
+| Frontend | React + Vite + TypeScript (SPA, private seller dashboard) |
+| Repository | Monorepo with npm workspaces (`apps/api`, `apps/web`, `packages/contracts`) |
 | AI agent framework (Phase 3) | Genkit (Node.js/TypeScript SDK) |
 | Test tooling | Vitest (unit + integration), Supertest (HTTP endpoints) |
 | Deployment target | Docker: Docker Compose locally; the same image deploys to any Docker-capable host |
