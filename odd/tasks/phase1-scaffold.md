@@ -57,3 +57,12 @@ Strategy: `ask-on-risk`. Forecast: ~150 authored lines (excl. lockfile) — sing
 ## Next step
 
 GREEN: implement `Product.create` in `src/products/domain/Product.ts` to pass the RED tests.
+
+## Delivery evidence
+
+- Commit `846b15d` — `chore: scaffold phase 1 project with failing Product test` (amended to add `.atl/` to `.gitignore`).
+- Native review (RDD): assessed medium, consent granted, one lens (review-reliability), approved and acknowledged (lineage `review-c8ab5f456c9066ab`, authority burned).
+- Non-blocking follow-ups from review:
+  - R3-port-parse-unvalidated — `src/server.ts:4`: validate `PORT` (empty → 0, non-numeric → NaN).
+  - R3-red-suite-committed — expected TDD RED; resolved by the GREEN step.
+  - R3-untyped-throw-assertions — assert specific domain errors; cover NaN/Infinity price and zero price/stock.
