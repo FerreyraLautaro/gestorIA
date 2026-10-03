@@ -112,4 +112,13 @@ describe('ListProducts', () => {
       'pageSize',
     );
   });
+
+  it.each(['archived', 'ACTIVE', '', 'all'])('rejects status %j', async (status) => {
+    const listProducts = new ListProducts(new InMemoryProductRepository());
+
+    await expectValidationField(
+      listProducts.execute({ ownerId: 'owner-a', status: status as ProductStatus }),
+      'status',
+    );
+  });
 });
