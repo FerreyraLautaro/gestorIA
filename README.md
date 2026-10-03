@@ -39,7 +39,8 @@ Root scripts orchestrate; each workspace owns its own scripts.
 | Script | Purpose |
 |--------|---------|
 | `npm run dev:api` | Run the API with reload on change |
-| `npm test` | Run tests in every workspace |
+| `npm test` | Run tests in every workspace (unit + integration; needs PostgreSQL) |
+| `npm run test:unit` | Run only unit tests in every workspace (no database required) |
 | `npm run typecheck` | Type-check every workspace |
 | `npm run build` | Build every workspace that has a build step |
 
@@ -87,4 +88,4 @@ Integration tests (`*.int.test.ts`) run against real PostgreSQL, so start the
 database first (`docker compose up -d`). They use a dedicated test database named
 after `DATABASE_URL` with `_test` appended (for example `gestoria_test`); Vitest
 creates and migrates it automatically, so development data is never touched.
-Run only the unit tests with `npx vitest run --project unit` inside `apps/api`.
+Run only the unit tests, without PostgreSQL, with `npm run test:unit`.
