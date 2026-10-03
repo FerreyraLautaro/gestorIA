@@ -1,26 +1,48 @@
 import { describe, expect, it } from 'vitest';
+import { ValidationError } from '../../shared/domain/errors.js';
 import { Product } from './Product.js';
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const validProps = {
   ownerId: 'owner-123',
   name: 'Handmade mug',
   description: 'Ceramic mug, 350 ml',
-  price: 12.5,
+  price: 12500,
   stock: 10,
 };
 
+function expectValidationError(fn: () => unknown, field: string): void {
+  let caught: unknown;
+  try {
+    fn();
+  } catch (error) {
+    caught = error;
+  }
+
+  expect(caught).toBeInstanceOf(ValidationError);
+  expect((caught as ValidationError).field).toBe(field);
+}
+
 describe('Product.create', () => {
-  it('creates an active product with a generated id from valid data', () => {
+  it('creates an active product with a generated UUID from valid data', () => {
     const product = Product.create(validProps);
 
-    expect(product.id).toEqual(expect.any(String));
-    expect(product.id).not.toHaveLength(0);
+    expect(product.id).toMatch(UUID_PATTERN);
     expect(product.status).toBe('active');
     expect(product.ownerId).toBe(validProps.ownerId);
     expect(product.name).toBe(validProps.name);
     expect(product.description).toBe(validProps.description);
     expect(product.price).toBe(validProps.price);
     expect(product.stock).toBe(validProps.stock);
+  });
+
+  it('sets createdAt and updatedAt to the same creation date', () => {
+    const product = Product.create(validProps);
+
+    expect(product.createdAt).toBeInstanceOf(Date);
+    expect(product.updatedAt).toBeInstanceOf(Date);
+    expect(product.updatedAt.getTime()).toBe(product.createdAt.getTime());
   });
 
   it('generates a different id for each product', () => {
@@ -38,23 +60,53 @@ describe('Product.create', () => {
     expect(product.description).toBeUndefined();
   });
 
+  it.each(['', '   '])('treats a blank description (%j) as absent', (description) => {
+    const product = Product.create({ ...validProps, description });
+
+    expect(product.description).toBeUndefined();
+  });
+
+  it('trims the name and description', () => {
+    const product = Product.create({
+      ...validProps,
+      name: '  Handmade mug  ',
+      description: '  Ceramic mug  ',
+    });
+
+    expect(product.name).toBe('Handmade mug');
+    expect(product.description).toBe('Ceramic mug');
+  });
+
   it.each(['', '   '])('rejects a blank name (%j)', (name) => {
-    expect(() => Product.create({ ...validProps, name })).toThrow();
-  });
-
-  it('rejects a negative price', () => {
-    expect(() => Product.create({ ...validProps, price: -0.01 })).toThrow();
-  });
-
-  it('rejects a negative stock', () => {
-    expect(() => Product.create({ ...validProps, stock: -1 })).toThrow();
-  });
-
-  it('rejects a non-integer stock', () => {
-    expect(() => Product.create({ ...validProps, stock: 1.5 })).toThrow();
+    expectValidationError(() => Product.create({ ...validProps, name }), 'name');
   });
 
   it.each(['', '   '])('rejects a blank ownerId (%j)', (ownerId) => {
-    expect(() => Product.create({ ...validProps, ownerId })).toThrow();
+    expectValidationError(() => Product.create({ ...validProps, ownerId }), 'ownerId');
+  });
+
+  it.each([
+    ['negative', -1],
+    ['non-integer', 12.5],
+    ['NaN', Number.NaN],
+    ['Infinity', Number.POSITIVE_INFINITY],
+  ])('rejects a %s price', (_label, price) => {
+    expectValidationError(() => Product.create({ ...validProps, price }), 'price');
+  });
+
+  it('accepts a price of 0', () => {
+    expect(Product.create({ ...validProps, price: 0 }).price).toBe(0);
+  });
+
+  it.each([
+    ['negative', -1],
+    ['non-integer', 1.5],
+    ['NaN', Number.NaN],
+  ])('rejects a %s stock', (_label, stock) => {
+    expectValidationError(() => Product.create({ ...validProps, stock }), 'stock');
+  });
+
+  it('accepts a stock of 0', () => {
+    expect(Product.create({ ...validProps, stock: 0 }).stock).toBe(0);
   });
 });
