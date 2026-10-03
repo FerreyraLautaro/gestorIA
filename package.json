@@ -5,7 +5,7 @@
   "description": "Product catalog management for small businesses (npm workspaces monorepo).",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.9"
   },
   "workspaces": [
     "apps/*",
