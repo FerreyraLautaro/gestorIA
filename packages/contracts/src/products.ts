@@ -26,14 +26,18 @@ export interface CreateProductRequest {
   status?: ProductStatus;
 }
 
-/** Body of `PUT/PATCH /products/{id}`: every field is optional. */
+/** Body of `PATCH /products/{id}`: only the fields sent are updated. */
 export type UpdateProductRequest = Partial<CreateProductRequest>;
 
-/** Pagination metadata for list responses. */
+/** Page sizes accepted by `GET /products?pageSize=`. */
+export type PageSize = 5 | 10 | 20;
+
+/** Pagination metadata for list responses. `page` starts at 1. */
 export interface Pagination {
   page: number;
-  pageSize: number;
+  pageSize: PageSize;
   total: number;
+  totalPages: number;
 }
 
 /** Response of `GET /products`. */

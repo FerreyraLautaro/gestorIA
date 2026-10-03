@@ -150,7 +150,7 @@ build times justify it).
 gestoria/
   apps/
     api/              @gestoria/api — Express REST API (backend)
-    web/              @gestoria/web — React + Vite SPA (seller dashboard)
+    web/              @gestoria/web — React + Vite SPA (seller dashboard; planned)
   packages/
     contracts/        @gestoria/contracts — shared HTTP contract (request/response DTOs)
   docs/               Design and project documentation
