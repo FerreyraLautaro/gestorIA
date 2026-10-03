@@ -1,0 +1,27 @@
+{
+  "name": "gestoria",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Product catalog management for small businesses (npm workspaces monorepo).",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w @gestoria/api",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FerreyraLautaro/gestorIA.git"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
