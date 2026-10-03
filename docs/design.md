@@ -64,7 +64,7 @@ design decisions that block them.
 | ownerId | UUID | seller that owns the product; isolation key (see below) |
 | name | string | required |
 | description | string | optional; later feeds RAG |
-| price | decimal | >= 0 |
+| price | integer | >= 0, whole Argentine pesos (ARS); no decimals, single currency in the MVP |
 | stock | integer | >= 0 |
 | status | enum | `active` / `inactive` |
 | createdAt / updatedAt | timestamp | |
@@ -89,18 +89,45 @@ reference products. Listings return only `active` products by default.
 | POST | `/products` | Create product |
 | GET | `/products` | List (pagination, filter by status) |
 | GET | `/products/{id}` | Product detail |
-| PUT/PATCH | `/products/{id}` | Update product |
+| PATCH | `/products/{id}` | Partial update (only the fields sent change) |
 | DELETE | `/products/{id}` | Soft delete (set `status = inactive`) |
 
 All `/products` endpoints require a valid token; `ownerId` is taken from the
-token, never from the request body.
+token, never from the request body. `PUT` is not supported.
+
+### Pagination
+
+`GET /products?page=<n>&pageSize=<5|10|20>`
+
+- `pageSize` accepts only `5`, `10` or `20` (default `10`); any other value is a validation error.
+- `page` starts at `1` (default `1`).
+- Responses include `items` plus `page`, `pageSize`, `total` and `totalPages`.
+
+### Validation and API documentation
+
+- Request input is validated with **Zod** schemas at the HTTP boundary.
+- The OpenAPI 3 spec is **generated from the same Zod schemas** (code-first) and
+  served with Swagger UI. Every endpoint is documented in the same change that
+  adds it: request, responses, error cases, and auth requirements.
+
+### Error handling
+
+Errors follow one format across the API: **RFC 9457 Problem Details**
+(`application/problem+json` with `type`, `title`, `status`, `detail`, and
+field-level `errors` for validation failures).
+
+- **Domain errors** (e.g. `ValidationError`, `NotFoundError`) are plain classes
+  in `src/shared/domain/errors`, free of HTTP concepts.
+- A single **Express error middleware** in `src/shared/infrastructure/http`
+  maps domain and Zod errors to HTTP status codes and Problem Details.
+- Unknown errors return a generic `500` without leaking internals; details are logged.
 
 ### Authentication
 
 Self-managed email + password with JWT:
 
-- Passwords stored only as a slow, salted hash (e.g. bcrypt/argon2).
-- Login returns a signed, short-lived JWT carrying the account `id`.
+- Passwords stored only as a **bcrypt** hash (salted, slow by design).
+- Login returns a signed JWT carrying the account `id`, valid for **15 minutes**.
 - An auth middleware validates the token and injects `ownerId` into the request.
 - **[TBD]** Refresh tokens and password recovery (likely post-MVP).
 
@@ -166,6 +193,10 @@ src/
 | Frontend | React + Vite + TypeScript (SPA, private seller dashboard) |
 | Repository | Monorepo with npm workspaces (`apps/api`, `apps/web`, `packages/contracts`) |
 | AI agent framework (Phase 3) | Genkit (Node.js/TypeScript SDK) |
+| Data access | Drizzle ORM (SQL-like query builder) + Drizzle Kit migrations |
+| Validation | Zod |
+| API docs | OpenAPI 3 generated from Zod schemas, served with Swagger UI |
+| Password hashing | bcrypt |
 | Test tooling | Vitest (unit + integration), Supertest (HTTP endpoints) |
 | Deployment target | Docker: Docker Compose locally; the same image deploys to any Docker-capable host |
 
