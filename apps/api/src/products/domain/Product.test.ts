@@ -110,3 +110,40 @@ describe('Product.create', () => {
     expect(Product.create({ ...validProps, stock: 0 }).stock).toBe(0);
   });
 });
+
+describe('Product.restore', () => {
+  const persistedState = {
+    id: '0b6f2a52-3c1e-4d7a-9f4e-6a1d2c3b4e5f',
+    ownerId: '6c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f',
+    name: 'Handmade mug',
+    description: 'Ceramic mug, 350 ml',
+    price: 12500,
+    stock: 10,
+    status: 'inactive' as const,
+    createdAt: new Date('2026-01-10T12:00:00.000Z'),
+    updatedAt: new Date('2026-02-20T08:30:00.000Z'),
+  };
+
+  it('rebuilds a product keeping its persisted id, status and timestamps', () => {
+    const product = Product.restore(persistedState);
+
+    expect(product).toBeInstanceOf(Product);
+    expect(product.id).toBe(persistedState.id);
+    expect(product.ownerId).toBe(persistedState.ownerId);
+    expect(product.name).toBe(persistedState.name);
+    expect(product.description).toBe(persistedState.description);
+    expect(product.price).toBe(persistedState.price);
+    expect(product.stock).toBe(persistedState.stock);
+    expect(product.status).toBe('inactive');
+    expect(product.createdAt.toISOString()).toBe('2026-01-10T12:00:00.000Z');
+    expect(product.updatedAt.toISOString()).toBe('2026-02-20T08:30:00.000Z');
+  });
+
+  it('keeps the description absent when the persisted state has none', () => {
+    const { description: _omitted, ...withoutDescription } = persistedState;
+
+    const product = Product.restore(withoutDescription);
+
+    expect(product.description).toBeUndefined();
+  });
+});
