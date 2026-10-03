@@ -85,7 +85,9 @@ reference products. Listings return only `active` products by default.
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/auth/register` | Create account |
-| POST | `/auth/login` | Return access token |
+| POST | `/auth/login` | Return access token (+ refresh token cookie) |
+| POST | `/auth/refresh` | Rotate refresh token, return a new access token |
+| POST | `/auth/logout` | Revoke the current refresh token |
 | POST | `/products` | Create product |
 | GET | `/products` | List (pagination, filter by status) |
 | GET | `/products/{id}` | Product detail |
@@ -129,7 +131,13 @@ Self-managed email + password with JWT:
 - Passwords stored only as a **bcrypt** hash (salted, slow by design).
 - Login returns a signed JWT carrying the account `id`, valid for **15 minutes**.
 - An auth middleware validates the token and injects `ownerId` into the request.
-- **[TBD]** Refresh tokens and password recovery (likely post-MVP).
+- **Refresh tokens (in MVP):** login also issues a refresh token valid for **7 days**.
+  - Opaque random value; only its hash is stored (`refresh_tokens` table, linked to the account).
+  - **Rotation:** each use issues a new refresh token and revokes the previous one;
+    reuse of a revoked token revokes the whole token family (theft detection).
+  - Sent to the browser as an `httpOnly`, `Secure`, `SameSite=Strict` cookie; the
+    access token is kept in memory by the SPA, never in `localStorage`.
+- **[TBD]** Password recovery (post-MVP).
 
 ## 7. Architecture
 
