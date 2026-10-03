@@ -35,7 +35,7 @@ export class ListProducts {
   async execute(input: ListProductsInput): Promise<ListProductsResult> {
     const page = requirePage(input.page ?? 1);
     const pageSize = requirePageSize(input.pageSize ?? PAGE_SIZES.default);
-    const status = input.status ?? 'active';
+    const status = requireStatus(input.status ?? 'active');
 
     const { items, total } = await this.products.list(input.ownerId, { page, pageSize, status });
 
@@ -55,6 +55,15 @@ function requirePageSize(pageSize: number): PageSize {
     throw new ValidationError('pageSize', `pageSize must be one of: ${PAGE_SIZES.allowed.join(', ')}`);
   }
   return pageSize;
+}
+
+const STATUSES: readonly ProductStatus[] = ['active', 'inactive'];
+
+function requireStatus(status: ProductStatus): ProductStatus {
+  if (!STATUSES.includes(status)) {
+    throw new ValidationError('status', `status must be one of: ${STATUSES.join(', ')}`);
+  }
+  return status;
 }
 
 function isPageSize(value: number): value is PageSize {

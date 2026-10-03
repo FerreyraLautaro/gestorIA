@@ -20,6 +20,18 @@ Check the database is ready with `docker compose ps` (status `healthy`).
 
 Prerequisites: Node.js 22 or later (npm included), Docker with Docker Compose.
 
+## API endpoints and documentation
+
+With the API running (`npm run dev:api`):
+
+| Path | Purpose |
+|------|---------|
+| `GET /docs` | Swagger UI, generated from the Zod schemas |
+| `GET /openapi.json` | The raw OpenAPI 3 document |
+| `GET /health` | Liveness check, returns `{ "status": "ok" }` |
+
+Errors use RFC 9457 Problem Details (`application/problem+json`).
+
 ## Workspaces
 
 npm workspaces monorepo. Apps may depend on packages; packages never depend on
