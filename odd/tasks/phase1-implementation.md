@@ -21,8 +21,8 @@ the user approves and merges the previous PR.
 
 - [x] T1 — API hardening: env loading, `PORT` validation, listen errors, Postgres on loopback, pagination contract. Route: inline. PR #2 (`chore/api-hardening`), merged.
 - [x] T2 — Product domain: fix test fixtures (integer ARS price, typed errors), shared domain errors, `Product.create` GREEN. Route: delegated (writer, 3 files). PR #3 (`feat/product-domain`), merged.
-- [x] T3 — Persistence: Drizzle + migrations, `products` table, repository + integration tests against PostgreSQL. Route: delegated (writer, multi-file). Branch `feat/product-persistence`.
-- [ ] T4 — Use cases: create, update, list (paginated), deactivate; tested with an in-memory repository.
+- [x] T3 — Persistence: Drizzle + migrations, `products` table, repository + integration tests against PostgreSQL. Route: delegated (writer, multi-file). PR #4 (`feat/product-persistence`), merged.
+- [x] T4 — Use cases: create, update, list (paginated), deactivate; tested with an in-memory repository. Route: delegated (writer, multi-file). Branch `feat/product-use-cases`.
 - [ ] T5 — HTTP foundation: RFC 9457 error middleware, Zod validation, Swagger generated from Zod; testable startup.
 - [ ] T6 — Auth: `accounts` table, register + login, bcrypt, JWT 15 min (explained step by step).
 - [ ] T7 — Auth: refresh token rotation + reuse detection, logout.
@@ -33,7 +33,8 @@ the user approves and merges the previous PR.
 - T1: `parsePort` 12/12 tests; listen-error and `tsx watch` env flag verified manually; RDD reliability review approved twice.
 - T2: RED observed (suite failed to load: missing `./Product.js`); GREEN 32/32 (12 port + 20 product); typecheck clean. `ValidationError` carries `field`; price/stock integer >= 0 (NaN/Infinity/fractions rejected).
 - T3: RED observed (restore missing, modules missing); GREEN 50/50 (22 Product, 12 port, 4 testDatabase, 12 repository integration). `db:migrate` applied on dev DB; `d products` shows CHECKs + index. Parent found and fixed (TDD) an ownership hole in `save` upsert: now `setWhere owner_id` + immutable id/owner/createdAt, throws on foreign id. ~650 authored lines (290 tests), above the 400 heuristic due to integration plumbing.
+- T4: RED observed (6 suites missing modules, 17 failing: update/deactivate/NotFoundError); GREEN `test:unit` 90/90 without DB, `npm test` 102/102; typecheck clean. Use cases: Create/Get/Update/Deactivate/List (+ shared `findOwnedProduct`); `ListProducts` validates page >= 1 and pageSize 5/10/20, defaults to `active`. Open for T8: `CreateProductRequest.status` (contract) vs always-active create; HTTP maps flat list result to `pagination`. ~876 authored lines (~60% tests).
 
 ## Next step
 
-After the T3 PR is merged: T4 use cases.
+After the T4 PR is merged: T5 HTTP foundation (writer on Sonnet 5.5, user request).

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ValidationError } from '../../shared/domain/errors.js';
-import { Product } from './Product.js';
+import { Product, type ProductStatus } from './Product.js';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -145,5 +145,136 @@ describe('Product.restore', () => {
     const product = Product.restore(withoutDescription);
 
     expect(product.description).toBeUndefined();
+  });
+});
+
+describe('Product.update', () => {
+  const createdAt = new Date('2026-01-01T10:00:00.000Z');
+  const later = new Date('2026-02-01T10:00:00.000Z');
+
+  function persistedProduct(): Product {
+    return Product.restore({
+      id: '11111111-1111-4111-8111-111111111111',
+      ownerId: 'owner-123',
+      name: 'Handmade mug',
+      description: 'Ceramic mug, 350 ml',
+      price: 12500,
+      stock: 10,
+      status: 'active',
+      createdAt,
+      updatedAt: createdAt,
+    });
+  }
+
+  it('returns a new product with only the provided fields changed', () => {
+    const original = persistedProduct();
+
+    const updated = original.update({ price: 15000 }, later);
+
+    expect(updated).not.toBe(original);
+    expect(updated.price).toBe(15000);
+    expect(updated.name).toBe(original.name);
+    expect(updated.description).toBe(original.description);
+    expect(updated.stock).toBe(original.stock);
+    expect(updated.status).toBe(original.status);
+    expect(original.price).toBe(12500);
+  });
+
+  it('keeps id, ownerId and createdAt and sets updatedAt to now', () => {
+    const original = persistedProduct();
+
+    const updated = original.update({ name: 'Large mug' }, later);
+
+    expect(updated.id).toBe(original.id);
+    expect(updated.ownerId).toBe(original.ownerId);
+    expect(updated.createdAt.getTime()).toBe(createdAt.getTime());
+    expect(updated.updatedAt.getTime()).toBe(later.getTime());
+  });
+
+  it('updates every field at once, trimming text', () => {
+    const updated = persistedProduct().update(
+      { name: '  Large mug  ', description: '  500 ml  ', price: 0, stock: 0, status: 'inactive' },
+      later,
+    );
+
+    expect(updated.name).toBe('Large mug');
+    expect(updated.description).toBe('500 ml');
+    expect(updated.price).toBe(0);
+    expect(updated.stock).toBe(0);
+    expect(updated.status).toBe('inactive');
+  });
+
+  it('clears the description when an empty or blank one is provided', () => {
+    expect(persistedProduct().update({ description: '' }, later).description).toBeUndefined();
+    expect(persistedProduct().update({ description: '   ' }, later).description).toBeUndefined();
+  });
+
+  it('rejects an empty change set', () => {
+    expectValidationError(() => persistedProduct().update({}, later), 'body');
+  });
+
+  it('rejects a blank name', () => {
+    expectValidationError(() => persistedProduct().update({ name: '   ' }, later), 'name');
+  });
+
+  it.each([-1, 1.5, Number.NaN])('rejects an invalid price %s', (price) => {
+    expectValidationError(() => persistedProduct().update({ price }, later), 'price');
+  });
+
+  it.each([-1, 2.5, Number.POSITIVE_INFINITY])('rejects an invalid stock %s', (stock) => {
+    expectValidationError(() => persistedProduct().update({ stock }, later), 'stock');
+  });
+
+  it('rejects an unknown status', () => {
+    expectValidationError(
+      () => persistedProduct().update({ status: 'archived' as ProductStatus }, later),
+      'status',
+    );
+  });
+
+  it('defaults updatedAt to the current time', () => {
+    const before = Date.now();
+
+    const updated = persistedProduct().update({ stock: 3 });
+
+    expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(before);
+  });
+});
+
+describe('Product.deactivate', () => {
+  const createdAt = new Date('2026-01-01T10:00:00.000Z');
+  const later = new Date('2026-02-01T10:00:00.000Z');
+
+  function persistedProduct(status: ProductStatus): Product {
+    return Product.restore({
+      id: '22222222-2222-4222-8222-222222222222',
+      ownerId: 'owner-123',
+      name: 'Handmade mug',
+      price: 12500,
+      stock: 10,
+      status,
+      createdAt,
+      updatedAt: createdAt,
+    });
+  }
+
+  it('returns a new inactive product with updatedAt set to now', () => {
+    const original = persistedProduct('active');
+
+    const deactivated = original.deactivate(later);
+
+    expect(deactivated).not.toBe(original);
+    expect(deactivated.status).toBe('inactive');
+    expect(deactivated.updatedAt.getTime()).toBe(later.getTime());
+    expect(deactivated.id).toBe(original.id);
+    expect(deactivated.createdAt.getTime()).toBe(createdAt.getTime());
+    expect(original.status).toBe('active');
+  });
+
+  it('is idempotent for an already inactive product', () => {
+    const deactivated = persistedProduct('inactive').deactivate(later);
+
+    expect(deactivated.status).toBe('inactive');
+    expect(deactivated.name).toBe('Handmade mug');
   });
 });

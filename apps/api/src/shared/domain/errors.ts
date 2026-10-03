@@ -23,3 +23,15 @@ export class ValidationError extends DomainError {
     super(message);
   }
 }
+
+/** Raised when a resource does not exist or is not visible to the caller. */
+export class NotFoundError extends DomainError {
+  readonly code = 'NOT_FOUND';
+
+  constructor(
+    readonly resource: string,
+    readonly id: string,
+  ) {
+    super(`${resource} ${id} was not found`);
+  }
+}
