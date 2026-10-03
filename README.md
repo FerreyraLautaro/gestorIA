@@ -12,6 +12,7 @@ cp .env.example .env                    # Docker Compose infra; set a real POSTG
 cp apps/api/.env.example apps/api/.env  # API settings; keep DATABASE_URL in sync
 docker compose up -d                    # starts PostgreSQL (pgvector image)
 npm install                             # installs and links all workspaces
+npm run db:migrate -w @gestoria/api     # creates the database schema
 npm run dev:api                         # API on http://localhost:3000
 ```
 
@@ -44,6 +45,16 @@ Root scripts orchestrate; each workspace owns its own scripts.
 
 Target one workspace with `-w`, for example `npm run test:watch -w @gestoria/api`.
 
+### Database scripts (`@gestoria/api`)
+
+The API uses Drizzle ORM. Each feature owns its table schema
+(`src/<feature>/infrastructure/*.schema.ts`); SQL migrations live in `apps/api/migrations/`.
+
+| Script | Purpose |
+|--------|---------|
+| `npm run db:generate -w @gestoria/api` | Generate a SQL migration from schema changes (drizzle-kit) |
+| `npm run db:migrate -w @gestoria/api` | Apply pending migrations to `DATABASE_URL` |
+
 ## Configuration
 
 | File | Used by | Contents |
@@ -71,3 +82,9 @@ apps/api/src/
 
 This project follows TDD: write a failing test (RED), make it pass (GREEN),
 then refactor. Tests live next to the code they cover as `*.test.ts`.
+
+Integration tests (`*.int.test.ts`) run against real PostgreSQL, so start the
+database first (`docker compose up -d`). They use a dedicated test database named
+after `DATABASE_URL` with `_test` appended (for example `gestoria_test`); Vitest
+creates and migrates it automatically, so development data is never touched.
+Run only the unit tests with `npx vitest run --project unit` inside `apps/api`.

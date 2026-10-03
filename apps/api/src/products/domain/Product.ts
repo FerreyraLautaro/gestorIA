@@ -12,7 +12,8 @@ export interface CreateProductProps {
   stock: number;
 }
 
-interface ProductState {
+/** Full state of a persisted product, used to rebuild it without re-running creation rules. */
+export interface ProductState {
   id: string;
   ownerId: string;
   name: string;
@@ -47,6 +48,18 @@ export class Product {
     this.status = state.status;
     this.createdAt = state.createdAt;
     this.updatedAt = state.updatedAt;
+  }
+
+  /**
+   * Rebuilds a product from trusted persisted state (e.g. a repository row).
+   * Keeps the stored id, status and timestamps instead of generating new ones.
+   */
+  static restore(state: ProductState): Product {
+    return new Product({
+      ...state,
+      createdAt: new Date(state.createdAt.getTime()),
+      updatedAt: new Date(state.updatedAt.getTime()),
+    });
   }
 
   static create(props: CreateProductProps): Product {
