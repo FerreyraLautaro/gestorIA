@@ -88,14 +88,16 @@ reference products. Listings return only `active` products by default.
 | POST | `/auth/login` | Return access token (+ refresh token cookie) |
 | POST | `/auth/refresh` | Rotate refresh token, return a new access token |
 | POST | `/auth/logout` | Revoke the current refresh token |
-| POST | `/products` | Create product |
+| POST | `/products` | Create product (always created `active`) |
 | GET | `/products` | List (pagination, filter by status) |
 | GET | `/products/{id}` | Product detail |
 | PATCH | `/products/{id}` | Partial update (only the fields sent change) |
 | DELETE | `/products/{id}` | Soft delete (set `status = inactive`) |
 
 All `/products` endpoints require a valid token; `ownerId` is taken from the
-token, never from the request body. `PUT` is not supported.
+token, never from the request body (a body `ownerId` is rejected). `PUT` is not supported.
+A product of another account answers `404`, never `403`; a malformed `{id}` answers `400`.
+`status` cannot be sent on create; it changes only through `PATCH` or `DELETE`.
 
 ### Pagination
 

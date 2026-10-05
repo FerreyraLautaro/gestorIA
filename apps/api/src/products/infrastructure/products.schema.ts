@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { check, index, integer, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { accounts } from '../../accounts/infrastructure/accounts.schema.js';
 
 export const productStatus = pgEnum('product_status', ['active', 'inactive']);
 
@@ -7,8 +8,11 @@ export const products = pgTable(
   'products',
   {
     id: uuid('id').primaryKey(),
-    // No foreign key yet: the accounts table arrives with authentication.
-    ownerId: uuid('owner_id').notNull(),
+    // RESTRICT: products are soft-deleted and Phase 2 reservations will reference them,
+    // so an account that owns products must never be removable (and never orphan them).
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => accounts.id, { onDelete: 'restrict' }),
     name: text('name').notNull(),
     description: text('description'),
     price: integer('price').notNull(),

@@ -17,17 +17,19 @@ export interface ProductResponse {
   updatedAt: string;
 }
 
-/** Body of `POST /products`. */
+/** Body of `POST /products`. Products are always created `active`. */
 export interface CreateProductRequest {
   name: string;
   description?: string;
   price: number;
   stock: number;
-  status?: ProductStatus;
 }
 
-/** Body of `PATCH /products/{id}`: only the fields sent are updated. */
-export type UpdateProductRequest = Partial<CreateProductRequest>;
+/**
+ * Body of `PATCH /products/{id}`: only the fields sent are updated, at least one is required.
+ * `status` can only be changed here (or through `DELETE`, which deactivates).
+ */
+export type UpdateProductRequest = Partial<CreateProductRequest> & { status?: ProductStatus };
 
 /** Page sizes accepted by `GET /products?pageSize=`. */
 export type PageSize = 5 | 10 | 20;

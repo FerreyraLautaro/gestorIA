@@ -10,6 +10,13 @@ import { DrizzleRefreshTokenRepository } from './accounts/infrastructure/Drizzle
 import { createAuthRouter } from './accounts/infrastructure/http/authRouter.js';
 import { JwtAccessTokenService } from './accounts/infrastructure/JwtAccessTokenService.js';
 import { Sha256RefreshTokenGenerator } from './accounts/infrastructure/Sha256RefreshTokenGenerator.js';
+import { CreateProduct } from './products/application/CreateProduct.js';
+import { DeactivateProduct } from './products/application/DeactivateProduct.js';
+import { GetProduct } from './products/application/GetProduct.js';
+import { ListProducts } from './products/application/ListProducts.js';
+import { UpdateProduct } from './products/application/UpdateProduct.js';
+import { DrizzleProductRepository } from './products/infrastructure/DrizzleProductRepository.js';
+import { createProductsRouter } from './products/infrastructure/http/productsRouter.js';
 import { parseJwtSecret } from './shared/config/jwtSecret.js';
 import { parsePort } from './shared/config/port.js';
 import { createDatabase } from './shared/infrastructure/db/database.js';
@@ -30,6 +37,7 @@ try {
   const tokens = new JwtAccessTokenService(jwtSecret);
   const refreshTokens = new DrizzleRefreshTokenRepository(db);
   const refreshGenerator = new Sha256RefreshTokenGenerator();
+  const products = new DrizzleProductRepository(db);
   const clock = () => new Date();
   const refreshIssuer = new RefreshTokenIssuer(refreshGenerator, clock);
   const app = createApp({
@@ -45,6 +53,14 @@ try {
           clock,
         ),
         logout: new Logout(refreshTokens, refreshGenerator, clock),
+      }),
+      createProductsRouter({
+        tokens,
+        createProduct: new CreateProduct(products),
+        getProduct: new GetProduct(products),
+        updateProduct: new UpdateProduct(products),
+        deactivateProduct: new DeactivateProduct(products),
+        listProducts: new ListProducts(products),
       }),
     ],
   });
