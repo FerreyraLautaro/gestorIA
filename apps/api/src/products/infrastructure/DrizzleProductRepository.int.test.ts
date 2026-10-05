@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
+import { Account } from '../../accounts/domain/Account.js';
+import { DrizzleAccountRepository } from '../../accounts/infrastructure/DrizzleAccountRepository.js';
 import { createDatabase, type Database } from '../../shared/infrastructure/db/database.js';
 import { Product, type ProductState } from '../domain/Product.js';
 import { DrizzleProductRepository } from './DrizzleProductRepository.js';
@@ -18,11 +20,22 @@ beforeAll(() => {
 });
 
 afterAll(async () => {
+  // Leave no fixture rows behind: stale products would violate the owner FK on the next migrate.
+  await database.db.execute(sql`TRUNCATE TABLE accounts CASCADE`);
   await database.close();
 });
 
 beforeEach(async () => {
-  await database.db.execute(sql`TRUNCATE TABLE products`);
+  // products.owner_id references accounts, so the owners must exist before any product.
+  await database.db.execute(sql`TRUNCATE TABLE accounts CASCADE`);
+  const accounts = new DrizzleAccountRepository(database.db);
+  for (const [id, email] of [
+    [OWNER_A, 'a@shop.com'],
+    [OWNER_B, 'b@shop.com'],
+  ] as const) {
+    const account = Account.create({ email, passwordHash: 'hash', businessName: 'Shop' });
+    await accounts.save(Account.restore({ ...account, id }));
+  }
 });
 
 let sequence = 0;
@@ -46,6 +59,23 @@ function productState(overrides: Partial<ProductState> = {}): ProductState {
 }
 
 describe('DrizzleProductRepository', () => {
+  describe('owner foreign key', () => {
+    it('rejects a product whose owner account does not exist', async () => {
+      const orphan = productState({ ownerId: randomUUID() });
+
+      await expect(repository.save(Product.restore(orphan))).rejects.toThrow();
+      expect(await repository.findById(orphan.ownerId, orphan.id)).toBeNull();
+    });
+
+    it('refuses to delete an account that still owns products', async () => {
+      await repository.save(Product.restore(productState({ ownerId: OWNER_A })));
+
+      await expect(
+        database.db.execute(sql`DELETE FROM accounts WHERE id = ${OWNER_A}`),
+      ).rejects.toThrow();
+    });
+  });
+
   describe('save + findById', () => {
     it('round-trips every field', async () => {
       const state = productState({

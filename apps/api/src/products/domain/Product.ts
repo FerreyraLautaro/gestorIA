@@ -6,7 +6,7 @@ export type ProductStatus = 'active' | 'inactive';
 export interface CreateProductProps {
   ownerId: string;
   name: string;
-  description?: string;
+  description?: string | undefined;
   /** Whole Argentine pesos (ARS); integer >= 0. */
   price: number;
   stock: number;
@@ -14,12 +14,12 @@ export interface CreateProductProps {
 
 /** Fields that can change after creation. Omitted fields keep their current value. */
 export interface ProductChanges {
-  name?: string;
+  name?: string | undefined;
   /** An empty or blank value clears the description. */
-  description?: string;
-  price?: number;
-  stock?: number;
-  status?: ProductStatus;
+  description?: string | undefined;
+  price?: number | undefined;
+  stock?: number | undefined;
+  status?: ProductStatus | undefined;
 }
 
 const PRODUCT_STATUSES: readonly ProductStatus[] = ['active', 'inactive'];

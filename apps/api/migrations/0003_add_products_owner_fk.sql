@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD CONSTRAINT "products_owner_id_accounts_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."accounts"("id") ON DELETE restrict ON UPDATE no action;

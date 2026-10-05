@@ -4,7 +4,7 @@ import type { ProductRepository } from '../domain/ProductRepository.js';
 export interface CreateProductInput {
   ownerId: string;
   name: string;
-  description?: string;
+  description?: string | undefined;
   /** Whole Argentine pesos (ARS); integer >= 0. */
   price: number;
   stock: number;
