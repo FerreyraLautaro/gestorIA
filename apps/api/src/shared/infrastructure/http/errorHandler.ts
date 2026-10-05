@@ -1,11 +1,18 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { ZodError } from 'zod';
-import { NotFoundError, ValidationError } from '../../domain/errors.js';
+import {
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from '../../domain/errors.js';
 import { PROBLEM_CONTENT_TYPE, PROBLEM_TYPE, type ProblemDetails } from './problem.js';
 
 const TITLES: Record<number, string> = {
   400: 'Bad Request',
+  401: 'Unauthorized',
   404: 'Not Found',
+  409: 'Conflict',
   500: 'Internal Server Error',
 };
 
@@ -53,6 +60,12 @@ function toProblem(error: unknown, instance: string): ProblemDetails {
   }
   if (error instanceof NotFoundError) {
     return problem(404, error.message, instance, { code: error.code });
+  }
+  if (error instanceof UnauthorizedError) {
+    return problem(401, error.message, instance, { code: error.code });
+  }
+  if (error instanceof ConflictError) {
+    return problem(409, error.message, instance, { code: error.code });
   }
   return problem(500, 'An unexpected error occurred.', instance);
 }

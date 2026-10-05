@@ -73,7 +73,7 @@ The API uses Drizzle ORM. Each feature owns its table schema
 | File | Used by | Contents |
 |------|---------|----------|
 | `.env` | Docker Compose | `POSTGRES_*` infra variables |
-| `apps/api/.env` | API | `PORT`, `DATABASE_URL` |
+| `apps/api/.env` | API | `PORT`, `DATABASE_URL`, `JWT_SECRET` (>= 32 chars, required) |
 | `tsconfig.base.json` | All workspaces | Shared strict compiler options |
 
 ## API layout (`apps/api`)
@@ -88,7 +88,7 @@ apps/api/src/
     infrastructure/  HTTP controllers, database adapters
   shared/            Cross-feature building blocks
   app.ts             Express app factory (createApp)
-  server.ts          Entry point: reads PORT and listens
+  server.ts          Entry point: validates env, wires adapters, listens
 ```
 
 ## Development workflow
