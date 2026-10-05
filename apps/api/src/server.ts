@@ -1,10 +1,15 @@
 import { createApp } from './app.js';
 import { LoginAccount } from './accounts/application/LoginAccount.js';
+import { Logout } from './accounts/application/Logout.js';
+import { RefreshSession } from './accounts/application/RefreshSession.js';
+import { RefreshTokenIssuer } from './accounts/application/RefreshTokenIssuer.js';
 import { RegisterAccount } from './accounts/application/RegisterAccount.js';
 import { BcryptPasswordHasher } from './accounts/infrastructure/BcryptPasswordHasher.js';
 import { DrizzleAccountRepository } from './accounts/infrastructure/DrizzleAccountRepository.js';
+import { DrizzleRefreshTokenRepository } from './accounts/infrastructure/DrizzleRefreshTokenRepository.js';
 import { createAuthRouter } from './accounts/infrastructure/http/authRouter.js';
 import { JwtAccessTokenService } from './accounts/infrastructure/JwtAccessTokenService.js';
+import { Sha256RefreshTokenGenerator } from './accounts/infrastructure/Sha256RefreshTokenGenerator.js';
 import { parseJwtSecret } from './shared/config/jwtSecret.js';
 import { parsePort } from './shared/config/port.js';
 import { createDatabase } from './shared/infrastructure/db/database.js';
@@ -23,11 +28,23 @@ try {
   const accounts = new DrizzleAccountRepository(db);
   const hasher = new BcryptPasswordHasher();
   const tokens = new JwtAccessTokenService(jwtSecret);
+  const refreshTokens = new DrizzleRefreshTokenRepository(db);
+  const refreshGenerator = new Sha256RefreshTokenGenerator();
+  const clock = () => new Date();
+  const refreshIssuer = new RefreshTokenIssuer(refreshGenerator, clock);
   const app = createApp({
     routers: [
       createAuthRouter({
         registerAccount: new RegisterAccount(accounts, hasher),
-        loginAccount: new LoginAccount(accounts, hasher, tokens),
+        loginAccount: new LoginAccount(accounts, hasher, tokens, refreshTokens, refreshIssuer),
+        refreshSession: new RefreshSession(
+          refreshTokens,
+          refreshGenerator,
+          refreshIssuer,
+          tokens,
+          clock,
+        ),
+        logout: new Logout(refreshTokens, refreshGenerator, clock),
       }),
     ],
   });
