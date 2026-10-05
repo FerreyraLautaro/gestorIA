@@ -42,4 +42,4 @@ the user approves and merges the previous PR.
 
 ## Next step
 
-Phase 1 complete — pending user decision on Phase 2.
+Phase 1 complete (T1-T8 merged). Roadmap re-planned in docs/design.md v0.2 (user decision: keep this stack, adopt the SaaS modular v1 business design). Next feature: Phase 1.5 alignment (product sku/minStock/metadata, stock movements, event bus and log) in its own feature document.
