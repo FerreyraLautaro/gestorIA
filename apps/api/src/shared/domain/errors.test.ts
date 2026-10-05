@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DomainError, NotFoundError, ValidationError } from './errors.js';
+import {
+  ConflictError,
+  DomainError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from './errors.js';
 
 describe('ValidationError', () => {
   it('is a domain error carrying the offending field', () => {
@@ -24,5 +30,27 @@ describe('NotFoundError', () => {
     expect(error.id).toBe('abc-123');
     expect(error.name).toBe('NotFoundError');
     expect(error.message).toBe('product abc-123 was not found');
+  });
+});
+
+describe('ConflictError', () => {
+  it('is a domain error for state conflicts such as duplicates', () => {
+    const error = new ConflictError('email is already registered');
+
+    expect(error).toBeInstanceOf(DomainError);
+    expect(error.code).toBe('CONFLICT');
+    expect(error.name).toBe('ConflictError');
+    expect(error.message).toBe('email is already registered');
+  });
+});
+
+describe('UnauthorizedError', () => {
+  it('is a domain error for failed authentication', () => {
+    const error = new UnauthorizedError('invalid email or password');
+
+    expect(error).toBeInstanceOf(DomainError);
+    expect(error.code).toBe('UNAUTHORIZED');
+    expect(error.name).toBe('UnauthorizedError');
+    expect(error.message).toBe('invalid email or password');
   });
 });

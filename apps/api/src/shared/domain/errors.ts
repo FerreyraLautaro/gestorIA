@@ -35,3 +35,21 @@ export class NotFoundError extends DomainError {
     super(`${resource} ${id} was not found`);
   }
 }
+
+/** Raised when an operation conflicts with existing state, e.g. a duplicate unique value. */
+export class ConflictError extends DomainError {
+  readonly code = 'CONFLICT';
+
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+/** Raised when the caller is not authenticated or presented invalid credentials. */
+export class UnauthorizedError extends DomainError {
+  readonly code = 'UNAUTHORIZED';
+
+  constructor(message = 'authentication required') {
+    super(message);
+  }
+}

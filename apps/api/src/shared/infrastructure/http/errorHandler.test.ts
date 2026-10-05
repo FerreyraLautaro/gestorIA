@@ -2,7 +2,12 @@ import express, { type Express, type RequestHandler } from 'express';
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { NotFoundError, ValidationError } from '../../domain/errors.js';
+import {
+  ConflictError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from '../../domain/errors.js';
 import { errorHandler, notFoundHandler } from './errorHandler.js';
 
 function appWith(handler: RequestHandler): Express {
@@ -47,7 +52,9 @@ describe('errorHandler', () => {
     const result = schema.safeParse({ name: 1, tags: [{ id: 'x' }] });
     expect(result.success).toBe(false);
 
-    const response = await request(appWith(throwing(result.error))).post('/boom').expect(400);
+    const response = await request(appWith(throwing(result.error)))
+      .post('/boom')
+      .expect(400);
 
     expect(response.headers['content-type']).toMatch(/^application\/problem\+json/);
     expect(response.body.title).toBe('Bad Request');
@@ -90,11 +97,45 @@ describe('errorHandler', () => {
     expect(response.body.errors).toBeUndefined();
   });
 
+  it('maps ConflictError to 409', async () => {
+    const response = await request(
+      appWith(throwing(new ConflictError('email is already registered'))),
+    )
+      .post('/boom')
+      .expect(409);
+
+    expect(response.headers['content-type']).toMatch(/^application\/problem\+json/);
+    expect(response.body).toMatchObject({
+      title: 'Conflict',
+      status: 409,
+      detail: 'email is already registered',
+      code: 'CONFLICT',
+    });
+  });
+
+  it('maps UnauthorizedError to 401', async () => {
+    const response = await request(
+      appWith(throwing(new UnauthorizedError('invalid email or password'))),
+    )
+      .post('/boom')
+      .expect(401);
+
+    expect(response.headers['content-type']).toMatch(/^application\/problem\+json/);
+    expect(response.body).toMatchObject({
+      title: 'Unauthorized',
+      status: 401,
+      detail: 'invalid email or password',
+      code: 'UNAUTHORIZED',
+    });
+  });
+
   it('maps unknown errors to a generic 500 without leaking internals and logs them', async () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const secret = new Error('connection string postgres://user:secret@db');
 
-    const response = await request(appWith(throwing(secret))).post('/boom').expect(500);
+    const response = await request(appWith(throwing(secret)))
+      .post('/boom')
+      .expect(500);
 
     expect(response.body).toEqual({
       type: 'about:blank',
@@ -108,7 +149,9 @@ describe('errorHandler', () => {
   });
 
   it('returns a 404 Problem Details for unknown routes', async () => {
-    const response = await request(appWith(() => undefined)).get('/nope').expect(404);
+    const response = await request(appWith(() => undefined))
+      .get('/nope')
+      .expect(404);
 
     expect(response.headers['content-type']).toMatch(/^application\/problem\+json/);
     expect(response.body).toEqual({
