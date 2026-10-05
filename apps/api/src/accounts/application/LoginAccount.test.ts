@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { UnauthorizedError } from '../../shared/domain/errors.js';
 import type { AccessTokenService } from '../domain/AccessTokenService.js';
 import { FakePasswordHasher } from '../infrastructure/testing/FakePasswordHasher.js';
+import { FakeRefreshTokenGenerator } from '../infrastructure/testing/FakeRefreshTokenGenerator.js';
 import { InMemoryAccountRepository } from '../infrastructure/testing/InMemoryAccountRepository.js';
+import { InMemoryRefreshTokenRepository } from '../infrastructure/testing/InMemoryRefreshTokenRepository.js';
 import { LoginAccount } from './LoginAccount.js';
+import { RefreshTokenIssuer } from './RefreshTokenIssuer.js';
 import { RegisterAccount } from './RegisterAccount.js';
 
 const tokens: AccessTokenService = {
@@ -21,7 +24,16 @@ async function setup() {
     password: 'correct horse',
     businessName: 'Mate Shop',
   });
-  return { account, hasher, loginAccount: new LoginAccount(accounts, hasher, tokens) };
+  const refreshTokens = new InMemoryRefreshTokenRepository();
+  const generator = new FakeRefreshTokenGenerator();
+  const loginAccount = new LoginAccount(
+    accounts,
+    hasher,
+    tokens,
+    refreshTokens,
+    new RefreshTokenIssuer(generator, () => new Date('2026-06-01T12:00:00.000Z')),
+  );
+  return { account, hasher, refreshTokens, generator, loginAccount };
 }
 
 describe('LoginAccount', () => {
@@ -33,7 +45,36 @@ describe('LoginAccount', () => {
       password: 'correct horse',
     });
 
-    expect(result).toEqual({ accessToken: `token-for-${account.id}`, expiresIn: 900 });
+    expect(result).toEqual({
+      accessToken: `token-for-${account.id}`,
+      expiresIn: 900,
+      refreshToken: 'raw-1',
+    });
+  });
+
+  it('starts a new refresh token family on every login and stores only the hash', async () => {
+    const { account, refreshTokens, generator, loginAccount } = await setup();
+    const credentials = { email: 'owner@shop.com', password: 'correct horse' };
+
+    const first = await loginAccount.execute(credentials);
+    const second = await loginAccount.execute(credentials);
+
+    const a = await refreshTokens.findByHash(generator.hash(first.refreshToken));
+    const b = await refreshTokens.findByHash(generator.hash(second.refreshToken));
+    expect(a).toMatchObject({ accountId: account.id, revokedAt: null });
+    expect(b).toMatchObject({ accountId: account.id, revokedAt: null });
+    expect(a?.familyId).not.toBe(b?.familyId);
+    expect(await refreshTokens.findByHash(first.refreshToken)).toBeNull();
+  });
+
+  it('issues no refresh token when the credentials are wrong', async () => {
+    const { refreshTokens, generator, loginAccount } = await setup();
+
+    await loginAccount
+      .execute({ email: 'owner@shop.com', password: 'wrong password' })
+      .catch(() => undefined);
+
+    expect(await refreshTokens.findByHash(generator.hash('raw-1'))).toBeNull();
   });
 
   it('rejects a wrong password', async () => {

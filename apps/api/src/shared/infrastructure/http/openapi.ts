@@ -14,6 +14,12 @@ openApiRegistry.registerComponent('securitySchemes', 'bearerAuth', {
   bearerFormat: 'JWT',
 });
 
+openApiRegistry.registerComponent('securitySchemes', 'refreshCookie', {
+  type: 'apiKey',
+  in: 'cookie',
+  name: 'refresh_token',
+});
+
 /** Response definition for error cases, documented as RFC 9457 Problem Details. */
 export function problemResponse(description: string) {
   return {

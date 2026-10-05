@@ -20,7 +20,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await database.db.execute(sql`TRUNCATE TABLE accounts`);
+  await database.db.execute(sql`TRUNCATE TABLE accounts CASCADE`);
 });
 
 let sequence = 0;
